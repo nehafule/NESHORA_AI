@@ -1,0 +1,2 @@
+# NESHORA_AI
+Studyplanner
