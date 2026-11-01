@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}NESHORA AI — Plan Smart. Learn Better.{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <p class="eyebrow">YOUR INTELLIGENT STUDY COMPANION</p>
+    <h1>Study smarter.<br><span>Achieve more.</span></h1>
+    <p class="lead">NESHORA AI brings your syllabus, schedule, study time, and progress into one calm, focused space.</p>
+    <div class="hero-actions">
+      <a class="button" href="{{ url_for('auth.signup') }}">Start learning free <span>→</span></a>
+      <a class="text-link" href="#features">Explore features ↓</a>
+    </div>
+  </div>
+  <div class="hero-art" aria-hidden="true">
+    <div class="orb"></div><div class="leaf leaf-one">⌁</div><div class="leaf leaf-two">⌁</div>
+    <div class="study-card"><span class="card-icon">✦</span><strong>Today’s focus</strong><small>Biology · 45 min</small><div class="progress"><i></i></div></div>
+  </div>
+</section>
+<section id="features" class="section">
+  <p class="eyebrow">EVERYTHING IN ONE PLACE</p><h2>A gentler way to stay on track.</h2>
+  <div class="feature-grid">
+    <article><span>◒</span><h3>AI Study Planner</h3><p>Turn your goals and syllabus into a realistic plan.</p></article>
+    <article><span>▤</span><h3>Syllabus Manager</h3><p>Keep every important PDF and topic organized.</p></article>
+    <article><span>◷</span><h3>Time & Progress</h3><p>Build momentum with meaningful, honest insights.</p></article>
+  </div>
+</section>
+<section class="about-strip"><div><p class="eyebrow">MADE FOR YOUR JOURNEY</p><h2>Small steps become big progress.</h2></div><p>Built with care by Neha Phule and Shweta Mali for students who want structure without the stress.</p></section>
+{% endblock %}
+

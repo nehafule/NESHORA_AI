@@ -1,0 +1,13 @@
+<section class="auth-wrap"><div class="auth-card">
+  <p class="eyebrow">{{ eyebrow }}</p><h1>{{ heading }}</h1><p class="muted">{{ subheading }}</p>
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    {% for field in form if field.type not in ["CSRFTokenField", "SubmitField"] %}
+      <label for="{{ field.id }}">{{ field.label.text }}</label>
+      {{ field(class="input", autocomplete="new-password" if field.name == "password" else "email" if field.name == "email" else "name") }}
+      {% for error in field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+    {% endfor %}
+    {{ form.submit(class="button full-width") }}
+  </form>
+  <p class="auth-switch">{{ switch_text }} <a href="{{ switch_url }}">{{ switch_label }}</a></p>
+</div></section>

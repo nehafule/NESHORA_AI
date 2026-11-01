@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% set eyebrow = "BEGIN YOUR JOURNEY" %}{% set heading = "Create your account" %}{% set subheading = "A calmer, clearer way to make progress." %}{% set switch_text = "Already have an account?" %}{% set switch_url = url_for('auth.login') %}{% set switch_label = "Log in" %}
+{% block content %}
+{% include "auth_form.html" %}
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Syllabus PDFs — NESHORA AI{% endblock %}
+{% block content %}
+<section class="feature-page page-shell">
+  <div class="feature-heading"><div><p class="eyebrow">YOUR MATERIALS</p><h1>Syllabus PDFs</h1><p class="muted">Upload and keep your study materials private and organized.</p></div><a class="text-link" href="{{ url_for('main.dashboard') }}">← Dashboard</a></div>
+  <div class="feature-columns">
+    <div class="form-card">
+      <h2>Upload a syllabus</h2>
+      <form method="post" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        <label for="{{ form.subject.id }}">{{ form.subject.label.text }}</label>{{ form.subject(class="input", placeholder="Enter your subject name", list="syllabus-subjects") }}
+        <datalist id="syllabus-subjects">{% for subject in current_user_subjects %}<option value="{{ subject.name }}">{% endfor %}</datalist>
+        <label for="{{ form.pdf.id }}">{{ form.pdf.label.text }}</label>{{ form.pdf(class="input", accept=".pdf,application/pdf", required=true) }}
+        <p class="form-help">PDF only, maximum 10 MB. Text is extracted for your planner.</p>
+        {{ form.submit(class="button") }}
+      </form>
+    </div>
+    <div class="form-card"><h2>Your library</h2>
+      {% if pdfs %}<div class="document-list">{% for pdf in pdfs %}<article class="document-row"><div><strong>{{ pdf.filename }}</strong><small>{{ pdf.subject or "General syllabus" }} · {{ pdf.uploaded_at.strftime("%d %b %Y") }}</small></div><div class="document-actions"><a href="{{ url_for('syllabus.preview', pdf_id=pdf.id) }}" target="_blank" rel="noopener">Preview</a><a href="{{ url_for('syllabus.download', pdf_id=pdf.id) }}">Download</a><form method="post" action="{{ url_for('syllabus.delete', pdf_id=pdf.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">Delete</button></form></div></article>{% endfor %}</div>{% else %}<p class="muted">No syllabus PDFs uploaded yet.</p>{% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

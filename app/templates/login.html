@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% set eyebrow = "WELCOME BACK" %}{% set heading = "Let’s get studying" %}{% set subheading = "Pick up right where you left off." %}{% set switch_text = "New to NESHORA AI?" %}{% set switch_url = url_for('auth.signup') %}{% set switch_label = "Create an account" %}
+{% block content %}
+{% include "auth_form.html" %}
+{% endblock %}

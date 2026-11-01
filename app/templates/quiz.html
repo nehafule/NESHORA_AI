@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}AI Quiz — NESHORA AI{% endblock %}
+{% block content %}
+<section class="feature-page page-shell">
+  <div class="feature-heading"><div><p class="eyebrow">LEARN BY TESTING</p><h1>AI Quiz</h1><p class="muted">Generate questions from your own extracted syllabus material.</p></div><a class="text-link" href="{{ url_for('main.dashboard') }}">← Dashboard</a></div>
+  <div class="feature-columns quiz-columns">
+    <div class="form-card">
+      <h2>Build a quiz</h2>
+      <form method="post" action="{{ url_for('quiz.generate') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label for="pdf_id">Syllabus PDF</label>
+        <select class="input" id="pdf_id" name="pdf_id" required>
+          <option value="">Select an uploaded syllabus</option>
+          {% for pdf in pdfs %}<option value="{{ pdf.id }}">{{ pdf.filename }}{% if pdf.subject %} · {{ pdf.subject }}{% endif %}</option>{% endfor %}
+        </select>
+        <label for="subject_id">Subject (optional)</label>
+        <select class="input" id="subject_id" name="subject_id">
+          <option value="">Use the PDF subject</option>
+          {% for subject in current_user_subjects|default([]) %}<option value="{{ subject.id }}">{{ subject.name }}</option>{% endfor %}
+        </select>
+        <label for="topic">Topic (optional)</label>
+        <input class="input" id="topic" name="topic" maxlength="255" placeholder="Focus on a syllabus topic">
+        <label for="difficulty">Difficulty</label>
+        <select class="input" id="difficulty" name="difficulty" required><option>Easy</option><option selected>Medium</option><option>Hard</option></select>
+        <label for="question_count">Questions</label>
+        <select class="input" id="question_count" name="question_count" required>{% for count in [5, 10, 15, 20] %}<option value="{{ count }}">{{ count }} questions</option>{% endfor %}</select>
+        <button class="button" type="submit" data-generate-quiz>Generate New Quiz</button>
+      </form>
+      <p class="form-help">Saved quizzes can be reopened and retaken without using Gemini quota. Only Generate New Quiz calls Gemini.</p>
+    </div>
+    <div class="form-card quiz-card">
+      {% if quiz %}
+      <div class="quiz-meta"><span>{{ quiz.title or (quiz.subject ~ " " ~ quiz.difficulty ~ " Quiz") }}</span><span>{{ quiz.difficulty }} · {{ quiz.question_count }} questions{% if quiz.topic %} · {{ quiz.topic }}{% endif %}</span></div>
+      <p class="form-help">This saved quiz is loaded from your account. Retaking it does not call Gemini.</p>
+      <form method="post" action="{{ url_for('quiz.submit', quiz_id=quiz.id) }}" id="quiz-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% for question in quiz.questions %}
+        <article class="quiz-question" data-question="{{ loop.index0 }}" {% if not loop.first %}hidden{% endif %}>
+          <p class="eyebrow">QUESTION {{ loop.index }} OF {{ quiz.questions|length }}</p>
+          <h2>{{ question.prompt }}</h2>
+          <div class="quiz-options">{% for option in question.options %}<label><input type="radio" name="answer_{{ question.id }}" value="{{ loop.index0 }}"><span>{{ option }}</span></label>{% endfor %}</div>
+        </article>
+        {% endfor %}
+        <div class="quiz-navigation"><button class="button button-secondary" id="previous-question" type="button" disabled>Previous</button><button class="button button-secondary" id="next-question" type="button">Next</button><button class="button" id="submit-quiz" type="submit" hidden>Submit Quiz</button></div>
+      </form>
+      {% if attempt %}
+      <div class="quiz-result"><p class="eyebrow">RESULT</p><h2>{{ attempt.score }}/{{ attempt.total }} · {{ "%.0f"|format(attempt.percentage) }}%</h2><p>{{ "Excellent work." if attempt.percentage >= 80 else "Keep practicing and review the explanations below." }}</p></div>
+      {% for question in quiz.questions %}<div class="answer-review"><strong>{{ loop.index }}. {{ question.prompt }}</strong><p>Correct answer: {{ question.options[question.correct_index] }}</p><small>{{ question.explanation }}</small></div>{% endfor %}
+      {% endif %}
+      {% if quiz and attempts|length > 1 %}
+      <div class="quiz-result"><p class="eyebrow">PREVIOUS ATTEMPTS</p>
+        {% for previous_attempt in attempts %}<p>{{ previous_attempt.score }}/{{ previous_attempt.total }} · {{ "%.0f"|format(previous_attempt.percentage) }}% · {{ previous_attempt.submitted_at.strftime("%d %b %Y %H:%M") }}</p>{% endfor %}
+      </div>
+      {% endif %}
+      {% else %}
+      <div class="quiz-empty"><span class="empty-icon">✦</span><h2>Your next quiz starts here.</h2><p class="muted">Upload a syllabus PDF, then choose its difficulty and question count.</p></div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="form-card quiz-history"><h2>My Saved Quizzes</h2>{% if quizzes %}<div class="history-list">{% for item in quizzes %}<div class="history-row"><a href="{{ url_for('quiz.page', quiz_id=item.id) }}"><strong>{{ item.title or (item.subject ~ " " ~ item.difficulty ~ " Quiz") }}<small>{{ item.difficulty }} · {{ item.question_count }} questions · {{ item.created_at.strftime("%d %b %Y") }}</small></strong></a><a class="text-link" href="{{ url_for('quiz.retake', quiz_id=item.id) }}">Retake Quiz</a></div>{% endfor %}</div>{% else %}<p class="muted">No saved quizzes yet. Generate a new quiz to save it here.</p>{% endif %}</div>
+</section>
+<script>
+  const questions = [...document.querySelectorAll(".quiz-question")];
+  const previous = document.getElementById("previous-question");
+  const next = document.getElementById("next-question");
+  const submitQuiz = document.getElementById("submit-quiz");
+  let current = 0;
+  function showQuestion(index) {
+    if (!questions.length) return;
+    current = index;
+    questions.forEach((question, itemIndex) => { question.hidden = itemIndex !== current; });
+    previous.disabled = current === 0;
+    next.hidden = current === questions.length - 1;
+    submitQuiz.hidden = current !== questions.length - 1;
+  }
+  if (previous) { previous.addEventListener("click", () => showQuestion(current - 1)); next.addEventListener("click", () => showQuestion(current + 1)); showQuestion(0); }
+  const generateForm = document.querySelector("[data-generate-quiz]")?.form;
+  if (generateForm) {
+    generateForm.addEventListener("submit", () => {
+      const button = generateForm.querySelector("[data-generate-quiz]");
+      if (button.disabled) return;
+      button.disabled = true;
+      button.textContent = "Generating…";
+    });
+  }
+</script>
+{% endblock %}

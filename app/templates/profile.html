@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Profile — NESHORA AI{% endblock %}
+{% block content %}
+<section class="feature-page page-shell">
+  <div class="feature-heading"><div><p class="eyebrow">YOUR ACCOUNT</p><h1>Profile</h1><p class="muted">Keep your account details current and secure.</p></div><a class="text-link" href="{{ url_for('main.dashboard') }}">← Dashboard</a></div>
+  <div class="form-card profile-card"><form method="post">
+    {{ form.hidden_tag() }}
+    <label>{{ form.full_name.label.text }}</label>{{ form.full_name(class="input") }}
+    <label>{{ form.email.label.text }}</label>{{ form.email(class="input", type="email") }}
+    <h2>Change password</h2><p class="muted">Leave these fields blank to keep your current password.</p>
+    <label>{{ form.password.label.text }}</label>{{ form.password(class="input", autocomplete="new-password") }}
+    <label>{{ form.confirm_password.label.text }}</label>{{ form.confirm_password(class="input", autocomplete="new-password") }}
+    {{ form.submit(class="button") }}
+  </form></div>
+</section>
+{% endblock %}

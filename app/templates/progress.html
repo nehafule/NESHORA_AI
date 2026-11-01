@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Study Progress — NESHORA AI{% endblock %}
+{% block content %}
+<section class="feature-page page-shell">
+  <div class="feature-heading"><div><p class="eyebrow">SEE YOUR MOMENTUM</p><h1>Study Progress</h1><p class="muted">Your progress is calculated from completed study sessions.</p></div><a class="text-link" href="{{ url_for('main.dashboard') }}">← Dashboard</a></div>
+  <div class="stat-grid">
+    <div class="stat-card"><span>This week</span><strong>{{ weekly_seconds // 3600 }}<small>h</small> {{ (weekly_seconds % 3600) // 60 }}<small>m</small></strong></div>
+    <div class="stat-card"><span>Completed sessions</span><strong>{{ completed_sessions }}</strong></div>
+    <div class="stat-card"><span>Subjects studied</span><strong>{{ subject_totals|length }}</strong></div>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-card"><h2>Tasks</h2><canvas id="task-chart" aria-label="Completed versus pending tasks"></canvas></div>
+    <div class="chart-card"><h2>Study goals</h2><canvas id="goal-chart" aria-label="Completed versus remaining study goals"></canvas></div>
+    <div class="chart-card"><h2>Weekly study time</h2><canvas id="weekly-chart" aria-label="Weekly daily study time"></canvas></div>
+    <div class="chart-card"><h2>Monthly study time</h2><canvas id="monthly-chart" aria-label="Monthly study time"></canvas></div>
+  </div>
+  <div class="feature-columns">
+    <div class="form-card"><h2>By subject</h2>{% for subject, seconds in subject_totals.items() %}<div class="history-row"><strong>{{ subject }}</strong><span>{{ seconds // 3600 }}h {{ (seconds % 3600) // 60 }}m</span></div>{% else %}<p class="muted">Complete a session to see subject progress.</p>{% endfor %}</div>
+  </div>
+</section>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const colors = ["#526B55", "#B8D8BA", "#E8DCCB"];
+const charts = {};
+function makeChart(id, config) { charts[id] = new Chart(document.getElementById(id), config); }
+function barConfig(labels, values, label) {
+  return {type:"bar", data:{labels:labels, datasets:[{label:label, data:values, backgroundColor:"#526B55"}]}, options:{scales:{y:{beginAtZero:true}}}};
+}
+function pieConfig(labels, values) {
+  return {type:"pie", data:{labels:labels, datasets:[{data:values, backgroundColor:colors}]}};
+}
+makeChart("task-chart", pieConfig(["Completed", "Pending"], [{{ task_counts.completed }}, {{ task_counts.pending }}]));
+makeChart("goal-chart", pieConfig(["Completed", "Remaining"], [{{ goal_counts.completed }}, {{ goal_counts.remaining }}]));
+makeChart("weekly-chart", barConfig({{ daily.keys()|list|tojson }}, {{ daily.values()|map("int")|list|tojson }}, "Seconds"));
+makeChart("monthly-chart", barConfig({{ monthly.keys()|list|tojson }}, {{ monthly.values()|list|tojson }}, "Seconds"));
+async function refreshProgress() {
+  const response = await fetch("{{ url_for('student.progress_data') }}", {headers: {"Accept": "application/json"}});
+  if (!response.ok) return;
+  const data = await response.json();
+  charts["task-chart"].data.datasets[0].data = [data.tasks.completed, data.tasks.pending];
+  charts["goal-chart"].data.datasets[0].data = [data.goals.completed, data.goals.remaining];
+  charts["weekly-chart"].data.labels = Object.keys(data.weekly);
+  charts["weekly-chart"].data.datasets[0].data = Object.values(data.weekly);
+  charts["monthly-chart"].data.labels = Object.keys(data.monthly);
+  charts["monthly-chart"].data.datasets[0].data = Object.values(data.monthly);
+  Object.values(charts).forEach(chart => chart.update());
+}
+setInterval(refreshProgress, 30000);
+</script>
+{% endblock %}

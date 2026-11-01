@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Notes — NESHORA AI{% endblock %}
+{% block content %}
+<section class="feature-page page-shell">
+  <div class="feature-heading"><div><p class="eyebrow">CAPTURE YOUR THINKING</p><h1>My Notes</h1><p class="muted">Keep your study ideas organized by subject.</p></div><a class="text-link" href="{{ url_for('main.dashboard') }}">← Dashboard</a></div>
+  <div class="feature-columns">
+    <div class="form-card"><h2>{{ "Edit note" if editing else "Create a note" }}</h2>
+      <form method="post">
+        {{ form.hidden_tag() }}
+        <label>{{ form.title.label.text }}</label>{{ form.title(class="input") }}
+        <label>{{ form.subject.label.text }}</label>{{ form.subject(class="input", placeholder="Optional subject", list="note-subjects") }}
+        <datalist id="note-subjects">{% for subject in current_user_subjects %}<option value="{{ subject.name }}">{% endfor %}</datalist>
+        <label>{{ form.content.label.text }}</label>{{ form.content(class="input", rows="9") }}
+        {{ form.submit(class="button") }}
+        {% if editing %}<a class="text-link" href="{{ url_for('student.notes') }}">Cancel</a>{% endif %}
+      </form>
+    </div>
+    <div class="form-card">
+      <h2>Generate AI notes</h2>
+      <p class="muted">Create private revision notes from one of your uploaded syllabus PDFs.</p>
+      <form method="post" action="{{ url_for('student.generate_notes') }}">
+        {{ generation_form.hidden_tag() }}
+        <label>{{ generation_form.pdf_id.label.text }}</label>{{ generation_form.pdf_id(class="input") }}
+        <label>{{ generation_form.subject_id.label.text }}</label>{{ generation_form.subject_id(class="input") }}
+        <label>{{ generation_form.topic.label.text }} <span class="muted">(optional)</span></label>{{ generation_form.topic(class="input", placeholder="Focus on a syllabus topic") }}
+        <label>{{ generation_form.detail_level.label.text }}</label>{{ generation_form.detail_level(class="input") }}
+        {{ generation_form.submit(class="button") }}
+      </form>
+    </div>
+    <div class="form-card"><h2>Saved notes</h2>
+      {% for note in notes %}
+      <article class="document-row"><div><strong>{{ note.title }}</strong><small>{{ note.subject or "General" }}{% if note.is_generated %} · AI generated{% endif %} · {{ note.updated_at.strftime("%d %b %Y") }}</small><p>{{ note.content[:180] }}{% if note.content|length > 180 %}…{% endif %}</p></div><div class="document-actions"><a href="{{ url_for('student.download_note_pdf', note_id=note.id) }}">Download PDF</a><a href="{{ url_for('student.download_note_txt', note_id=note.id) }}">Download TXT</a><a href="{{ url_for('student.notes', edit=note.id) }}">Edit</a><form method="post" action="{{ url_for('student.delete_note', note_id=note.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">Delete</button></form></div></article>
+      {% else %}<p class="muted">Your notes will appear here.</p>{% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}NESHORA AI{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
+<body class="{% if current_user.is_authenticated %}authenticated-layout{% endif %}">
+  <nav class="navbar">
+    {% if current_user.is_authenticated %}
+      <button class="sidebar-toggle" type="button" aria-controls="app-sidebar" aria-expanded="false">
+        <span></span><span></span><span></span><b class="sr-only">Open navigation</b>
+      </button>
+    {% endif %}
+    <a class="brand" href="{{ url_for('main.index') }}"><span class="brand-mark">N</span> NESHORA <em>AI</em></a>
+    <div class="nav-links">
+      {% if current_user.is_authenticated %}
+        <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('planner.revisions') }}" class="notification-link" aria-label="Revision notifications">♢{% if unread_notification_count %}<b>{{ unread_notification_count }}</b>{% endif %}</a>
+        <span class="nav-user" aria-label="Signed-in student">{{ current_user.full_name }}</span>
+        <form method="post" action="{{ url_for('auth.logout') }}" class="inline-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="button button-quiet" type="submit">Log out</button>
+        </form>
+      {% else %}
+        <a href="{{ url_for('auth.login') }}">Log in</a>
+        <a class="button button-small" href="{{ url_for('auth.signup') }}">Get started</a>
+      {% endif %}
+    </div>
+  </nav>
+  {% if current_user.is_authenticated %}<div class="app-body">
+      <aside class="dashboard-sidebar" id="app-sidebar">
+        <p class="sidebar-label">YOUR SPACE</p>
+        <nav class="sidebar-nav" aria-label="Student navigation">
+          <a class="{% if request.endpoint == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">◈ <span>Dashboard</span></a>
+          <a class="{% if request.endpoint == 'planner.page' %}active{% endif %}" href="{{ url_for('planner.page') }}">◇ <span>Study Planner</span></a>
+          <a class="sidebar-subnav" href="{{ url_for('planner.page') }}#weekly-planner">↳ <span>Weekly timetable</span></a>
+          <a class="{% if request.endpoint in ['planner.revisions', 'planner.complete_revision', 'planner.reschedule_revision'] %}active{% endif %}" href="{{ url_for('planner.revisions') }}">↻ <span>Revision reminders{% if unread_notification_count %} ({{ unread_notification_count }}){% endif %}</span></a>
+          <a class="{% if request.endpoint in ['planner.exams', 'planner.delete_exam'] %}active{% endif %}" href="{{ url_for('planner.exams') }}">◷ <span>Exam Countdown</span></a>
+          <a class="{% if request.endpoint == 'syllabus.library' %}active{% endif %}" href="{{ url_for('syllabus.library') }}">▤ <span>Syllabus PDFs</span></a>
+          <a class="{% if request.endpoint == 'timer.page' %}active{% endif %}" href="{{ url_for('timer.page') }}">◷ <span>Time Session</span></a>
+          <a class="{% if request.endpoint == 'quiz.page' %}active{% endif %}" href="{{ url_for('quiz.page') }}">✦ <span>AI Quiz</span></a>
+          <a class="{% if request.endpoint in ['student.progress', 'student.progress_data'] %}active{% endif %}" href="{{ url_for('student.progress') }}">◒ <span>Study Progress</span></a>
+          <a class="{% if request.endpoint == 'student.notes' %}active{% endif %}" href="{{ url_for('student.notes') }}">▧ <span>Notes</span></a>
+          <a class="{% if request.endpoint in ['student.tasks', 'student.assessment'] %}active{% endif %}" href="{{ url_for('student.tasks') }}">✓ <span>Tasks</span></a>
+          <a class="{% if request.endpoint == 'student.profile' %}active{% endif %}" href="{{ url_for('student.profile') }}">◎ <span>Profile</span></a>
+        </nav>
+        <form method="post" action="{{ url_for('auth.logout') }}" class="sidebar-logout">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit">↪ <span>Logout</span></button>
+        </form>
+      </aside>
+  {% else %}<div class="public-body">
+  {% endif %}
+    <main class="{% if current_user.is_authenticated %}app-main{% endif %}">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-stack">
+            {% for category, message in messages %}
+              <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+      <footer><span>© 2026 NESHORA AI</span><span>Plan Smart. Learn Better. Achieve More.</span></footer>
+    </main>
+  </div>
+  {% if current_user.is_authenticated %}
+    <button class="back-to-top" type="button" aria-label="Back to top" hidden>↑</button>
+    <script>
+      (() => {
+        const sidebar = document.getElementById("app-sidebar");
+        const toggle = document.querySelector(".sidebar-toggle");
+        const topButton = document.querySelector(".back-to-top");
+        const scrollArea = document.querySelector(".app-main");
+        if (toggle && sidebar) {
+          toggle.addEventListener("click", () => {
+            const open = sidebar.classList.toggle("is-open");
+            toggle.setAttribute("aria-expanded", String(open));
+          });
+          sidebar.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => {
+            sidebar.classList.remove("is-open");
+            toggle.setAttribute("aria-expanded", "false");
+          }));
+        }
+        if (scrollArea && topButton) {
+          const update = () => { topButton.hidden = scrollArea.scrollTop < 320; };
+          scrollArea.addEventListener("scroll", update, { passive: true });
+          update();
+          topButton.addEventListener("click", () => scrollArea.scrollTo({ top: 0, behavior: "smooth" }));
+        }
+      })();
+    </script>
+  {% endif %}
+</body>
+</html>

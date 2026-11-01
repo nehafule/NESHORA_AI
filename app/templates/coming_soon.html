@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ feature_name }} — NESHORA AI{% endblock %}
+{% block content %}
+<section class="coming-soon page-shell">
+  <span class="empty-icon">✦</span>
+  <p class="eyebrow">NESHORA AI</p>
+  <h1>{{ feature_name }} is coming soon.</h1>
+  <p class="muted">This part of your learning space is being carefully prepared. Your account and existing data remain safe.</p>
+  <a class="button button-small" href="{{ url_for('main.dashboard') }}">Back to dashboard</a>
+</section>
+{% endblock %}

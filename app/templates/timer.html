@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Time Session — NESHORA AI{% endblock %}
+{% block content %}
+<section class="timer-page page-shell">
+  <div class="timer-heading">
+    <div><p class="eyebrow">FOCUSED STUDY</p><h1>Time Session</h1><p class="muted">Track only the time you actively spend learning.</p></div>
+    <a class="text-link" href="{{ url_for('main.dashboard') }}">← Back to dashboard</a>
+  </div>
+  <div class="timer-grid">
+    <div class="timer-card">
+      <div class="timer-status" id="timer-status">{{ active_session.status|capitalize if active_session else "Ready to focus" }}</div>
+      <div class="timer-display" id="timer-display">00:00</div>
+      <p class="timer-subject" id="timer-subject">{{ active_session.subject if active_session else "Choose a subject to begin" }}</p>
+      <div class="timer-controls">
+        <label for="subject-select">Subject</label>
+        <select id="subject-select" class="input" {% if active_session %}disabled{% endif %}>
+          <option value="">Select a subject</option>
+          {% for subject in custom_subjects %}
+          <option value="{{ subject.name }}" data-custom-subject-id="{{ subject.id }}" {% if active_session and active_session.subject == subject.name %}selected{% endif %}>{{ subject.name }}</option>
+          {% endfor %}
+          <option value="__add_subject__" data-add-subject="true">+ Add New Subject</option>
+        </select>
+        <label for="task-select">Study task (optional)</label>
+        <select id="task-select" class="input" {% if active_session %}disabled{% endif %}>
+          <option value="">General subject session</option>
+          {% for task in study_tasks %}
+          <option value="{{ task.id }}">{{ task.title }}{% if task.topic %} — {{ task.topic }}{% endif %}</option>
+          {% endfor %}
+        </select>
+        <div class="custom-subject-tools">
+          <span>Your subjects</span>
+          <div id="custom-subject-list">
+            {% for subject in custom_subjects %}
+            <button type="button" class="subject-manage" data-subject-id="{{ subject.id }}" data-subject-name="{{ subject.name }}">{{ subject.name }} <span>edit / delete</span></button>
+            {% else %}
+            <small>No custom subjects yet.</small>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="timer-buttons">
+          <button class="button" id="start-button" type="button" {% if active_session %}hidden{% endif %}>Start Study</button>
+          <button class="button button-secondary" id="pause-button" type="button" hidden>Pause</button>
+          <button class="button" id="resume-button" type="button" hidden>Resume</button>
+          <button class="button button-danger" id="finish-button" type="button" {% if not active_session %}hidden{% endif %}>Finish Study</button>
+        </div>
+        <p class="timer-error" id="timer-error" role="alert"></p>
+      </div>
+    </div>
+    <div class="timer-stats">
+      <div class="time-summary"><span>Today</span><strong id="today-total">{{ (stats.today_seconds // 60) }} min</strong></div>
+      <div class="time-summary"><span>This week</span><strong>{{ (stats.weekly_seconds // 60) }} min</strong></div>
+      <div class="time-summary"><span>This month</span><strong>{{ (stats.monthly_seconds // 60) }} min</strong></div>
+      <div class="chart-card"><h2>Weekly rhythm</h2><canvas id="weekly-chart" aria-label="Weekly study time chart"></canvas></div>
+    </div>
+  </div>
+  <div class="timer-lower-grid">
+    <div class="history-card"><h2>Session history</h2>
+      {% if history %}<div class="history-list">{% for session in history[:10] %}<div class="history-row"><div><strong>{{ session.subject or "Uncategorized" }}</strong><small>{{ session.ended_at.strftime("%d %b %Y, %H:%M") if session.ended_at else "Completed" }}</small></div><span>{{ (session.duration_seconds // 60) }} min</span></div>{% endfor %}</div>{% else %}<p class="muted">Completed sessions will appear here.</p>{% endif %}
+    </div>
+    <div class="history-card"><h2>By subject</h2>{% if stats.subject_totals %}<div class="subject-list">{% for subject, seconds in stats.subject_totals.items() %}<div class="history-row"><strong>{{ subject }}</strong><span>{{ seconds // 60 }} min</span></div>{% endfor %}</div>{% else %}<p class="muted">Your subject totals will build as you study.</p>{% endif %}</div>
+  </div>
+</section>
+<div class="subject-modal" id="subject-modal" hidden>
+  <div class="subject-modal-backdrop" data-close-subject-modal></div>
+  <div class="subject-modal-card" role="dialog" aria-modal="true" aria-labelledby="subject-modal-title">
+    <button class="subject-modal-close" type="button" data-close-subject-modal aria-label="Close">×</button>
+    <p class="eyebrow" id="subject-modal-eyebrow">PERSONALIZE YOUR SPACE</p>
+    <h2 id="subject-modal-title">Add a new subject</h2>
+    <label for="custom-subject-name">Subject name</label>
+    <input class="input" id="custom-subject-name" maxlength="120" type="text" autocomplete="off">
+    <p class="timer-error" id="subject-modal-error" role="alert"></p>
+    <p class="subject-modal-success" id="subject-modal-success" role="status"></p>
+    <div class="subject-modal-actions">
+      <button class="button button-quiet" type="button" data-close-subject-modal>Cancel</button>
+      <button class="button" id="save-subject-button" type="button">Save subject</button>
+    </div>
+  </div>
+</div>
+<script>
+  window.NeshoraTimer = {
+    active: {{ active_state|tojson if active_state else 'null' }},
+    weekly: {{ stats.weekly|tojson }},
+    csrfToken: document.querySelector('meta[name="csrf-token"]').content,
+    subjectRecords: [{% for subject in custom_subjects %}{"id": {{ subject.id }}, "name": {{ subject.name|tojson }}}{% if not loop.last %}, {% endif %}{% endfor %}]
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/timer.js') }}"></script>
+{% endblock %}

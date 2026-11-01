@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Tasks — NESHORA AI{% endblock %}
+{% block content %}
+<section class="feature-page page-shell">
+  <div class="feature-heading"><div><p class="eyebrow">SMALL STEPS, BIG RESULTS</p><h1>Study Tasks</h1><p class="muted">Plan assignments and keep your next actions visible.</p></div><a class="text-link" href="{{ url_for('main.dashboard') }}">← Dashboard</a></div>
+  <div class="feature-columns">
+    <div class="form-card"><h2>{{ "Edit task" if editing else "Add a task" }}</h2><form method="post">
+      {{ form.hidden_tag() }}
+      <label>{{ form.title.label.text }}</label>{{ form.title(class="input") }}
+      <label>{{ form.description.label.text }}</label>{{ form.description(class="input", rows="4") }}
+      <label>{{ form.due_date.label.text }}</label>{{ form.due_date(class="input") }}
+      <label>{{ form.priority.label.text }}</label>{{ form.priority(class="input") }}
+      <label>{{ form.linked_plan_item_id.label.text }}</label>{{ form.linked_plan_item_id(class="input") }}
+      <label>{{ form.subject_id.label.text }}</label>{{ form.subject_id(class="input") }}
+      <label>{{ form.syllabus_id.label.text }}</label>{{ form.syllabus_id(class="input") }}
+      <label>{{ form.topic.label.text }}</label>{{ form.topic(class="input", placeholder="Topic from the syllabus") }}
+      <label>{{ form.target_minutes.label.text }}</label>{{ form.target_minutes(class="input") }}
+      {{ form.submit(class="button") }}
+      {% if editing %}<a class="text-link" href="{{ url_for('student.tasks') }}">Cancel</a>{% endif %}
+    </form></div>
+    <div class="form-card"><h2>Generate syllabus tasks</h2><p class="muted">Create one task per topic found in your own uploaded syllabus.</p><form method="post" action="{{ url_for('student.generate_tasks') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>{{ form.subject_id.label.text }}</label>{{ form.subject_id(class="input") }}
+      <label>{{ form.syllabus_id.label.text }}</label>{{ form.syllabus_id(class="input") }}
+      <label>{{ form.target_minutes.label.text }}</label>{{ form.target_minutes(class="input") }}
+      <button class="button" type="submit">Generate tasks</button>
+    </form></div>
+    <div class="form-card task-board">
+      <div class="task-board-heading"><div><h2>Your tasks</h2><p class="muted">Important and upcoming tasks appear first.</p></div></div>
+      <div class="task-toolbar">
+        <nav class="task-filters" aria-label="Task filters">
+          {% for value, label in [("all", "All"), ("pending", "Pending"), ("completed", "Completed")] %}
+          <a class="{% if task_filter == value %}active{% endif %}" href="{{ url_for('student.tasks', filter=value, q=search) }}">{{ label }}</a>
+          {% endfor %}
+        </nav>
+        <form class="task-search" method="get">
+          <input type="hidden" name="filter" value="{{ task_filter }}">
+          <label class="sr-only" for="task-search-input">Search tasks</label>
+          <input class="input" id="task-search-input" type="search" name="q" value="{{ search }}" placeholder="Search tasks">
+          <button class="button button-small" type="submit">Search</button>
+        </form>
+      </div>
+      <div class="task-grid">
+      {% for task in tasks %}
+      <article class="task-card {% if task.completed %}is-completed{% endif %}">
+        <div class="task-card-top"><span class="task-status">{{ "Completed" if task.completed else "Pending" }}</span><span class="task-priority priority-{{ task.priority|lower }}">{{ task.priority }}</span></div>
+        <h3 class="{% if task.completed %}task-done{% endif %}">{{ task.title }}</h3>
+        <div class="task-meta">
+          {% if task.subject_id and task.subject_id in subject_names %}<span>{{ subject_names[task.subject_id] }}</span>{% endif %}
+          {% if task.due_date %}<span>Due {{ task.due_date.strftime("%d %b %Y") }}</span>{% else %}<span>No due date</span>{% endif %}
+        </div>
+        {% if task.topic %}<p class="task-topic">{{ task.topic }}</p>{% endif %}
+        {% if task.description %}<p class="task-description">{{ task.description }}</p>{% endif %}
+        <div class="task-card-actions">
+          {% if not task.completed and task.syllabus_id %}<a href="{{ url_for('timer.page') }}">Study</a>{% endif %}
+          <form method="post" action="{{ url_for('student.toggle_task', task_id=task.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">{{ "Reopen" if task.completed else "Complete" }}</button></form>
+          <a href="{{ url_for('student.tasks', edit=task.id) }}">Edit</a>
+          <form method="post" action="{{ url_for('student.delete_task', task_id=task.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">Delete</button></form>
+        </div>
+      </article>
+      {% else %}<p class="muted">No tasks yet.</p>{% endfor %}
+      </div>
+      {% if pagination.pages > 1 %}
+      <nav class="task-pagination" aria-label="Task pages">
+        {% if pagination.has_prev %}<a href="{{ url_for('student.tasks', filter=task_filter, q=search, page=pagination.prev_num) }}">Previous</a>{% endif %}
+        <span>Page {{ pagination.page }} of {{ pagination.pages }}</span>
+        {% if pagination.has_next %}<a href="{{ url_for('student.tasks', filter=task_filter, q=search, page=pagination.next_num) }}">Next</a>{% endif %}
+      </nav>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

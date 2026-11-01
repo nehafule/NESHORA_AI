@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — NESHORA AI{% endblock %}
+{% block content %}
+<div class="dashboard-layout">
+  <section class="dashboard-content">
+    <div class="dashboard-heading">
+      <div>
+        <p class="eyebrow">YOUR LEARNING SPACE</p>
+        <h1>Good to see you, {{ current_user.full_name.split()[0] }}.</h1>
+        <p class="muted">Let’s make today count, one focused session at a time.</p>
+      </div>
+    </div>
+
+    <div class="stat-grid dashboard-stat-grid">
+      <div class="stat-card"><span>Today’s study time</span><strong>{{ stats.today_minutes }} <small>min</small></strong><em>From your saved sessions</em></div>
+      <div class="stat-card"><span>Weekly study time</span><strong>{{ stats.weekly_minutes }} <small>min</small></strong><em>Since Monday</em></div>
+      <div class="stat-card"><span>Monthly study time</span><strong>{{ stats.monthly_minutes }} <small>min</small></strong><em>This calendar month</em></div>
+      <div class="stat-card"><span>Uploaded syllabus</span><strong>{{ stats.uploaded_pdfs }}</strong><em>PDF files in your library</em></div>
+      <div class="stat-card"><span>Completed tasks</span><strong>{{ stats.completed_tasks }}</strong><em class="positive">Keep your momentum</em></div>
+      <div class="stat-card"><span>Pending tasks</span><strong>{{ stats.pending_tasks }}</strong><em>Ready for your focus</em></div>
+      <div class="stat-card"><span>Quiz attempts</span><strong>{{ stats.quiz_attempts }}</strong><em>Results saved privately</em></div>
+    </div>
+
+    <div class="quick-actions">
+      <div class="section-heading"><div><p class="eyebrow">MAKE A MOVE</p><h2>Quick actions</h2></div></div>
+      <div class="action-grid">
+        <a href="{{ url_for('syllabus.library') }}"><span>▤</span><strong>Upload Syllabus PDF</strong><small>Organize your subjects</small></a>
+        <a href="{{ url_for('planner.page') }}"><span>◇</span><strong>Generate Study Timetable</strong><small>Plan your next steps</small></a>
+        <a href="{{ url_for('timer.page') }}"><span>◷</span><strong>Start Study Session</strong><small>Focus on what matters</small></a>
+        <a href="{{ url_for('quiz.page') }}"><span>✦</span><strong>Generate AI Quiz</strong><small>Test your understanding</small></a>
+        <a href="{{ url_for('main.feature', feature='progress') }}"><span>◒</span><strong>View Study Progress</strong><small>See your growth</small></a>
+        <a href="{{ url_for('main.feature', feature='notes') }}"><span>▧</span><strong>My Notes</strong><small>Keep ideas together</small></a>
+        <a href="{{ url_for('main.feature', feature='tasks') }}"><span>✓</span><strong>Study Tasks</strong><small>Keep your next actions visible</small></a>
+        <a href="{{ url_for('main.feature', feature='profile') }}"><span>◎</span><strong>Profile</strong><small>Manage your account</small></a>
+      </div>
+    </div>
+
+    <div class="dashboard-feature-grid">
+      <section class="dashboard-widget exam-widget">
+        <div class="section-heading"><div><p class="eyebrow">EXAM COUNTDOWN</p><h2>Next exam</h2></div><a class="text-link" href="{{ url_for('planner.exams') }}">Manage exams →</a></div>
+        {% if nearest_exam %}
+        <div class="countdown-card" data-countdown-target="{{ nearest_exam.exam_date.isoformat() }}T{{ nearest_exam.exam_time.strftime('%H:%M:%S') if nearest_exam.exam_time else '23:59:59' }}"><strong data-countdown-value>{{ exam_days_remaining }}</strong><span data-countdown-label>days remaining</span><h3>{{ nearest_exam.paper_name or nearest_exam.name }}</h3><p>{% if nearest_exam.exam_name %}{{ nearest_exam.exam_name }} · {% endif %}{% if nearest_exam.subject_ref and nearest_exam.paper_name is none %}{{ nearest_exam.subject_ref.name }} · {% endif %}{{ nearest_exam.exam_date.strftime("%d %b %Y") }}</p></div>
+        {% else %}<p class="muted">No upcoming exams.</p><a class="button button-small" href="{{ url_for('planner.exams') }}">Add an exam</a>{% endif %}
+      </section>
+      <section class="dashboard-widget">
+        <div class="section-heading"><div><p class="eyebrow">UPCOMING EXAMS</p><h2>Exam schedule</h2></div><a class="text-link" href="{{ url_for('planner.exams') }}">View all →</a></div>
+        {% for exam in exams %}<a class="dashboard-list-row" href="{{ url_for('planner.exams') }}"><strong>{{ exam.paper_name or exam.name }}</strong><span>{% if exam.exam_name %}{{ exam.exam_name }} · {% endif %}{{ exam.exam_date.strftime("%d %b") }}</span></a>{% else %}<p class="muted">No upcoming exams.</p>{% endfor %}
+      </section>
+    </div>
+
+    <div class="dashboard-feature-grid revision-widgets">
+      {% for title, label, reminders in [("Revision Due Today", "DUE TODAY", revision_dashboard.due_today), ("Overdue Revisions", "OVERDUE", revision_dashboard.overdue), ("Upcoming Revision Reminders", "UPCOMING", revision_dashboard.upcoming)] %}
+      <section class="dashboard-widget">
+        <div class="section-heading"><div><p class="eyebrow">{{ label }}</p><h2>{{ title }}</h2></div><a class="text-link" href="{{ url_for('planner.revisions') }}">View →</a></div>
+        {% for reminder in reminders[:4] %}<div class="dashboard-list-row"><strong>{{ reminder.subject_ref.name }}</strong><span>{{ reminder.topic }} · {{ reminder.reminder_date.strftime("%d %b") }}</span><form method="post" action="{{ url_for('planner.complete_revision', reminder_id=reminder.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="link-button" type="submit">Mark as Revised</button></form></div>{% else %}<p class="muted">No revisions scheduled.</p>{% endfor %}
+      </section>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+<script src="{{ url_for('static', filename='js/exam_countdown.js') }}"></script>
+{% endblock %}

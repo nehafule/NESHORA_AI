@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Topic Assessment — NESHORA AI{% endblock %}
+{% block content %}
+<section class="feature-page page-shell">
+  <div class="feature-heading">
+    <div><p class="eyebrow">TARGET REACHED</p><h1>{{ task.title }}</h1><p class="muted">Answer at least 80% correctly to complete this task.</p></div>
+    <a class="text-link" href="{{ url_for('student.tasks') }}">← Tasks</a>
+  </div>
+  <div class="form-card assessment-card">
+    <p class="muted">Active study recorded: {{ active_seconds // 60 }} minutes. {{ task.completion_criteria }}</p>
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% for question in assessment.questions %}
+      <fieldset class="assessment-question">
+        <legend>{{ loop.index }}. {{ question.question }}</legend>
+        {% for option in question.options %}
+        <label><input type="radio" name="answer_{{ loop.index0 }}" value="{{ loop.index0 }}" required> {{ option }}</label>
+        {% endfor %}
+      </fieldset>
+      {% endfor %}
+      <button class="button" type="submit">Submit assessment</button>
+    </form>
+  </div>
+</section>
+{% endblock %}
